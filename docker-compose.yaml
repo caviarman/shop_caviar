@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  
+  app:
+    container_name: "shop-container"
+    image: shoplocal:latest
+    environment:
+      - DATABASE_URL=postgres://user:pass@ps:5432/shop
+      - TLS_CERT=/opt/app/cmd/app/cert.pem
+      - TLS_KEY=/opt/app/cmd/app/key.pem
+    volumes:
+      - ./local_cert/cert.pem:/opt/app/cmd/app/cert.pem
+      - ./local_cert/key.pem:/opt/app/cmd/app/key.pem
+    ports:
+      - 443:443
+      - 8081:8081
+    depends_on:
+      ps:
+        condition: service_healthy
+  ps:
+    container_name: "postgres-container"
+    image: postgres
+    environment:
+      POSTGRES_USER: 'user'
+      POSTGRES_PASSWORD: 'pass'
+      POSTGRES_DB: 'shop'
+      PGDATA: '/var/lib/postgresql/data/pgdata'
+    volumes:
+      - /home/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d shop"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
